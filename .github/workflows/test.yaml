@@ -1,4 +1,4 @@
-name: Build targets
+name: Build and test targets
 on:
   workflow_dispatch:
   push: { branches: main }
@@ -27,4 +27,7 @@ jobs:
         run: |
           xmake config --arch=${{ matrix.arch }}
           xmake build ${{ matrix.target }}
+      - name: Test target
+        # TODO: xmake test
+        run: ./test/run.sh ${{ matrix.target }}
 
