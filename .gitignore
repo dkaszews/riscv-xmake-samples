@@ -3,6 +3,8 @@
 build/
 
 # Test artifacts
-test/**/actual_output.txt
 test/**/actual_code.txt
+test/**/actual_output.txt
+test/**/diff_code.txt
+test/**/diff_output.txt
 
