@@ -2,7 +2,7 @@
 .xmake/
 build/
 
-# MacOS Cache
-.DS_Store
-
+# Test artifacts
+test/**/actual_output.txt
+test/**/actual_code.txt
 
