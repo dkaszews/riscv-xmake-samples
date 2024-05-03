@@ -8,6 +8,7 @@ SCRIPT_ROOT="$(cd "$(dirname "$0")"; pwd -P)"
 TARGET="$1"
 TESTS_FAILED=0
 
+# TODO: make output more gtest-like
 pushd "${SCRIPT_ROOT}/${TARGET}" > /dev/null
 while read test; do
     TEST_FAILED=0
