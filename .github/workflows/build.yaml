@@ -1,0 +1,30 @@
+name: Build targets
+on:
+  workflow_dispatch:
+  push: { branches: main }
+  pull_request:
+
+jobs:
+  Test:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ rv32g, rv64g ]
+        target: [ hello ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: '>=2.9.1'
+          actions-cache-folder: '.xmake-cache'
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: gcc-riscv64-unknown-elf
+          version: 1.0
+      - name: Build target
+        run: |
+          xmake config --arch=${{ matrix.arch }}
+          xmake build ${{ matrix.target }}
+
