@@ -12,7 +12,7 @@
 .globl _start
 _start:
     la sp, _stack_end
-    csrr t0, mhartid
+    csrr t0, hartid
     bnez t0, _start
 
     jal echo_hello
