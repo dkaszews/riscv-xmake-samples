@@ -10,9 +10,9 @@ Provided as a reference for getting started with RISC-V assembly.
 
 ## Usage
 1. Install [`xmake`](https://xrepo.xmake.io/#/getting_started?id=get-started), `gcc-riscv64-unknown-elf` toolchain
-1. `xmake`
-1. `xmake run qemu`
-1. To debug, run `xmake run qemu-gdb` in one terminal and `xmake run gdb-attach` in another
+1. `xmake build hello`
+1. `xmake run hello`
+1. To debug, run `xmake run gdb hello` in one terminal and `xmake run attach hello` in another
     * Optionally, install `gdb-multiarch` to get register ABI names instead of canonical ones
 1. Switch between configurations with `xmake config --arch=rv32g` and `--arch=rv64g`
 
