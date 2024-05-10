@@ -95,3 +95,23 @@ target_phony('attach', function (target)
     signal.reset(signal.SIGINT)
 end)
 
+
+target_phony('ci', function (target)
+    args = import('core.base.option').get('arguments')
+    if not args then
+        raise('Usage: xmake run ci <target>')
+    end
+    -- TODO: this is awful, https://github.com/xmake-io/xmake/discussions/5085
+    try {
+        function ()
+            import('qemu').exec(args[1])
+        end,
+        catch {
+            function (errors)
+                local status = errors:match('.*failed%((%d)%)')
+                os.exit(status)
+            end
+        }
+    }
+end)
+
