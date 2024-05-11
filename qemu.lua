@@ -27,6 +27,7 @@ end
 function exec(name, opts)
     opts = opts or {}
     opts.extra_args = opts.extra_args or {}
+    opts.exec_options = opts.exec_options or {}
 
     execv_args = {
         '-M', 'virt',
@@ -40,6 +41,14 @@ function exec(name, opts)
         table.insert(execv_args, v)
     end
 
-    os.execv(executable(), execv_args)
+    return os.execv(executable(), execv_args, opts.exec_options)
+end
+
+function proxy(target)
+    args = import('core.base.option').get('arguments')
+    if not args then
+        raise(('Usage: xmake run %s <target>'):format(target:name()))
+    end
+    return args[1]
 end
 

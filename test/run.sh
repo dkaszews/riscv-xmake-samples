@@ -74,6 +74,7 @@ fi
 # TODO: plurals
 echo -e "${RED}[  FAILED  ]${RESET} ${TESTS_FAILED} tests, listed below:"
 # TODO: enumerate
+echo
 echo " ${TESTS_FAILED} FAILED TESTS"
 exit 1
 

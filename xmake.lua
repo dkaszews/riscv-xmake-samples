@@ -62,6 +62,7 @@ function target_phony(name, runner)
         set_default(false)
         -- TODO: 'toolchain not found 'error' without this
         set_toolchains('gcc')
+        -- TODO: wrapping `runner` in closure causes missing `import` error
         on_run(runner)
     target_end()
 end
@@ -71,47 +72,28 @@ target_asm('hello')
 
 
 target_phony('gdb', function (target)
-    args = import('core.base.option').get('arguments')
-    if not args then
-        raise('Usage: xmake run gdb <target>')
-    end
-    import('qemu').exec(args[1], { extra_args = { '-s', '-S' } })
+    import('qemu')
+    qemu.exec(qemu.proxy(target), { extra_args = { '-s', '-S' } })
 end)
 
 
 target_phony('attach', function (target)
-    args = import('core.base.option').get('arguments')
-    if not args then
-        raise('Usage: xmake run attach <target>')
-    end
+    import('core.base.signal')
+    import('qemu')
 
     init = 'target remote localhost:1234'
     multiarch = os.iorun('sh -c "which gdb-multiarch || true"'):len() ~= 0
     exe = multiarch and 'gdb-multiarch' or 'gdb'
 
-    import('core.base.signal')
     signal.register(signal.SIGINT, function () end)
-    os.execv(exe, { import('qemu').binary(args[1]), '-ex', init })
+    os.execv(exe, { qemu.binary(qemu.proxy(target)), '-ex', init })
     signal.reset(signal.SIGINT)
 end)
 
 
 target_phony('ci', function (target)
-    args = import('core.base.option').get('arguments')
-    if not args then
-        raise('Usage: xmake run ci <target>')
-    end
-    -- TODO: this is awful, https://github.com/xmake-io/xmake/discussions/5085
-    try {
-        function ()
-            import('qemu').exec(args[1])
-        end,
-        catch {
-            function (errors)
-                local status = errors:match('.*failed%((%d)%)')
-                os.exit(status)
-            end
-        }
-    }
+    import('qemu')
+    status = qemu.exec(qemu.proxy(target), { exec_options = { try = true } })
+    os.exit(status)
 end)
 
