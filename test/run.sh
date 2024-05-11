@@ -25,6 +25,8 @@ echo -e "${CPASS}[==========]${CNONE} Running ${total} tests from ${suites} suit
 
 while read suite; do
     pushd $suite > /dev/null
+
+    # TODO: runner overriding
     runner="$(realpath ./test.sh)"
     ls -1d *.test/ > tests.log
     tests="$(cat tests.log | wc -l)"

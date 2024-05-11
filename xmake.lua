@@ -52,6 +52,14 @@ function target_asm(name)
         on_run(function (target)
             import('qemu').exec(name)
         end)
+
+        -- TODO: maybe migrate all logic to lua?
+        add_tests('default', { runargs = { name = name } })
+        on_test(function (target, opt)
+            runner = ('%s/test/run.sh'):format(os.projectdir())
+            test = ('%s/test/%s'):format(os.projectdir(), opt.runargs.name)
+            return os.execv(runner, { test }, { try = true }) == 0
+        end)
     target_end()
 end
 

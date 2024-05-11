@@ -28,7 +28,6 @@ jobs:
           xmake config --arch=${{ matrix.arch }}
           xmake build ${{ matrix.target }}
       - name: Test target
-        # TODO: xmake test
         # TODO: upload artifacts on failure
-        run: ./test/run.sh test/${{ matrix.target }}
+        run: xmake test '${{ matrix.target }}/*'
 
