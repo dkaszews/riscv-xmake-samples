@@ -1,80 +1,87 @@
 #!/usr/bin/env bash
 set -e
 
-# TODO: multiple targets
-if [[ -z $1 ]]; then
-    echo >&2 'Usage: $0 <target>'
-    exit 1
-fi
+CNONE='\033[0m'
+CFAIL='\033[31m'
+CPASS='\033[32m'
 
-SCRIPT_ROOT="$(cd "$(dirname "$0")"; pwd -P)"
-TARGET="$1"
-TESTS_PASSED=0
-TESTS_FAILED=0
-IMPLIED_RESULT="$(mktemp -p /tmp implied_zero.XXXXXX)"
+# TODO: options
+[[ -d "$1" ]] && cd "$1"
 
-RESET='\033[0m'
-RED='\033[31m'
-GREEN='\033[32m'
+tests_passed=0
+tests_failed=0
+failed_tests="$(realpath ./failed_tests.log)"
+echo -n > "$failed_tests"
+implied_result="$(realpath ./implied_result.log)"
+echo 0 > $implied_result
 
-echo 0 > $IMPLIED_RESULT
-pushd "${SCRIPT_ROOT}/${TARGET}" > /dev/null
+ls -1d *.suite/ > suites.log
+suites="$(cat suites.log | wc -l)"
+ls -1d *.suite/*.test/ > tests.log
+total="$(cat tests.log | wc -l)"
 
-TESTS="$(ls -1d */ | wc -l)"
-echo -e "${GREEN}[==========]${RESET} Running ${TESTS} from 1 test case."
-echo -e "${GREEN}[----------]${RESET} Global test environment set-up."
-echo -e "${GREEN}[==========]${RESET} ${TESTS} from ${TARGET}"
+# TODO: plurals
+echo -e "${CPASS}[==========]${CNONE} Running ${total} tests from ${suites} suites."
 
-while read TEST; do
-    TEST_FAILED=0
-    pushd "$TEST" > /dev/null
-    echo -e "${GREEN}[ RUN      ]${RESET} ${TARGET}.${TEST%%/}"
+while read suite; do
+    pushd $suite > /dev/null
+    runner="$(realpath ./test.sh)"
+    ls -1d *.test/ > tests.log
+    tests="$(cat tests.log | wc -l)"
+    echo -e "${CPASS}[----------]${CNONE} ${tests} tests from ${suite%.suite/}"
 
-    # TODO: configurable timeout
-    # TODO: measure time
-    EXIT_CODE=0
-    timeout 10 xmake run ci ${TARGET} < input.txt > output.log || EXIT_CODE=$?
-    echo $EXIT_CODE > result.log
-    [[ -e result.txt ]] && RESULT='result.txt' || RESULT="$IMPLIED_RESULT"
-    diff -u result.log $RESULT > result.diff || true
-    diff -u output.log output.txt > output.diff || true
+    # TODO: functions
+    while read test; do
+        pushd $test > /dev/null
+        # TODO: repeated name
+        echo -e "${CPASS}[ RUN      ]${CNONE} ${suite%.suite/}.${test%.test/}"
 
-    if [[ -s result.diff ]]; then
-        TEST_FAILED=1
-        cat result.diff
-    fi
-    if [[ -s output.diff ]]; then
-        TEST_FAILED=1
-        cat output.diff
-    fi
-    if [[ "${TEST_FAILED}" -eq 0 ]]; then
-        echo -e "${GREEN}[       OK ]${RESET} ${TARGET}.${TEST%%/} (TODO ms)"
-        ((TESTS_PASSED++)) || true
-    else
-        echo -e "${RED}[  FAILED  ]${RESET} ${TARGET}.${TEST%%/} (TODO ms)"
-        ((TESTS_FAILED++)) || true
-    fi
+        pass=1
+        exit_code=0
+        # TODO: configurable timeout
+        # TODO: implied input
+        timeout 10 "$runner" < input.txt > output.log || exit_code=$?
+        echo $exit_code > result.log
 
+        # TODO: implied output
+        [[ -e result.txt ]] && result='result.txt' || result="${implied_result}"
+        diff -u result.log $result > result.diff || [[ "$?" -eq 1 ]]
+        diff -u output.log output.txt > output.diff || [[ "$?" -eq 1 ]]
+
+        if [[ -s result.diff ]]; then
+            pass=0
+            cat result.diff
+        fi
+        if [[ -s output.diff ]]; then
+            pass=0
+            cat output.diff
+        fi
+        if [[ "$pass" -ne 0 ]]; then
+            echo -e "${CPASS}[       OK ]${CNONE} ${suite%.suite/}.${test%.test/} (TODO ms)"
+            ((tests_passed++)) || true
+        else
+            echo -e "${CFAIL}[  FAILED  ]${CNONE} ${suite%.suite/}.${test%.test/} (TODO ms)"
+            ((tests_failed++)) || true
+            echo "${suite%.suite/}.${test%.test/}" >> "$failed_tests"
+        fi
+
+        popd > /dev/null
+    done < tests.log
+
+    echo -e "${CPASS}[----------]${CNONE} ${tests} tests from ${suite%.suite/} (TODO ms total)"
     popd > /dev/null
-done < <(ls -d */)
+done < suites.log
 
-popd > /dev/null
-rm $IMPLIED_RESULT
+echo -e "${CPASS}[==========]${CNONE} ${total} tests from ${suites} suites ran. (TODO ms total)"
+echo -e "${CPASS}[  PASSED  ]${CNONE} ${tests_passed} tests."
+[[ "${tests_failed}" -eq 0 ]] && exit 0
 
-echo -e "${GREEN}[==========]${RESET} ${TESTS} from ${TARGET} (TODO ms total)"
-echo -e "${GREEN}[----------]${RESET} Global test environment tear-down."
-# TODO: plurals
-echo -e "${GREEN}[==========]${RESET} ${TESTS} from 1 test case ran."
-echo -e "${GREEN}[  PASSED  ]${RESET} ${TESTS_PASSED} tests."
+echo -e "${CFAIL}[  FAILED  ]${CNONE} ${tests_failed} tests, listed below:"
+while read test; do
+    echo -e "${CFAIL}[  FAILED  ]${CNONE} $test"
+done < "$failed_tests"
 
-if [[ "${TESTS_FAILED}" -eq 0 ]]; then
-    exit 0
-fi
-
-# TODO: plurals
-echo -e "${RED}[  FAILED  ]${RESET} ${TESTS_FAILED} tests, listed below:"
-# TODO: enumerate
 echo
-echo " ${TESTS_FAILED} FAILED TESTS"
+echo " ${tests_failed} FAILED TESTS"
 exit 1
 
