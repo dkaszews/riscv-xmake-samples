@@ -1,4 +1,4 @@
-name: Build targets
+name: Build and test targets
 on:
   workflow_dispatch:
   push: { branches: main }
@@ -21,10 +21,10 @@ jobs:
           actions-cache-folder: '.xmake-cache'
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: gcc-riscv64-unknown-elf
+          packages: gcc-riscv64-unknown-elf qemu-system-misc
           version: 1.0
       - name: Build target
         run: |
           xmake config --arch=${{ matrix.arch }}
-          xmake build ${{ matrix.target }}
+          xmake test '${{ matrix.target }}/*'
 

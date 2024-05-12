@@ -1,0 +1,2 @@
+Input your name: Björne
+Hello, Björne! Your name is 0x07 bytes long.
