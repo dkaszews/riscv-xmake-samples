@@ -53,12 +53,13 @@ function target_asm(name)
             import('qemu').exec(name)
         end)
 
-        -- TODO: maybe migrate all logic to lua?
-        add_tests('default', { runargs = { name = name } })
+        suites = ('%s/test/%s/*'):format(os.projectdir(), name)
+        for _, suite in ipairs(os.dirs(suites)) do
+            add_tests(path.filename(suite))
+        end
+
         on_test(function (target, opt)
-            runner = ('%s/test/run.sh'):format(os.projectdir())
-            test = ('%s/test/%s'):format(os.projectdir(), opt.runargs.name)
-            return os.execv(runner, { test }, { try = true }) == 0
+            return import('qemu').test(target, opt)
         end)
     target_end()
 end
@@ -96,12 +97,5 @@ target_phony('attach', function (target)
     signal.register(signal.SIGINT, function () end)
     os.execv(exe, { qemu.binary(qemu.proxy(target)), '-ex', init })
     signal.reset(signal.SIGINT)
-end)
-
-
-target_phony('ci', function (target)
-    import('qemu')
-    status = qemu.exec(qemu.proxy(target), { exec_options = { try = true } })
-    os.exit(status)
 end)
 
