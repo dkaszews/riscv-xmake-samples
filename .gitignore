@@ -1,6 +1,4 @@
 # Xmake cache
 .xmake/
 build/
-*.log
-*.diff
 

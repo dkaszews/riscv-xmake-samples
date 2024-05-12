@@ -1,2 +1,2 @@
-Input your name: Dominiś
-Hello, Dominiś! Your name is 0x08 bytes long.
+Input your name: Björne
+Hello, Björne! Your name is 0x07 bytes long.
