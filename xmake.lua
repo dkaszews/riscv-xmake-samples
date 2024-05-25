@@ -26,6 +26,9 @@ toolchain('riscv64-unknown-elf')
         function add_asflags(flags)
             toolchain:add('asflags', flags)
         end
+        function add_ldflags(flags)
+            toolchain:add('ldflags', flags)
+        end
 
         add_asflags('-march=' .. get_config('arch'))
         add_asflags('-Xassembler --defsym -Xassembler')
@@ -33,8 +36,10 @@ toolchain('riscv64-unknown-elf')
 
         if is_arch('rv64g') then
             add_asflags('-mabi=lp64')
+            add_ldflags('--oformat elf64-littleriscv')
         elseif is_arch('rv32g') then
             add_asflags('-mabi=ilp32')
+            add_ldflags('--oformat elf32-littleriscv')
         end
     end)
 
@@ -46,8 +51,7 @@ function target_asm(name)
         set_toolchains('riscv64-unknown-elf')
         add_files(('src/%s/**.s'):format(name))
         add_includedirs(('src/%s'):format(name))
-        add_files('link/$(arch).ld')
-        add_ldflags('--library-path link', { force = true })
+        add_files('link.ld')
 
         on_run(function (target)
             import('qemu').exec(name)
