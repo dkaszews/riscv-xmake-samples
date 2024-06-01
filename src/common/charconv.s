@@ -17,8 +17,8 @@ snprint_hexn:
     add a0, a0, a1
 
 _snprint_hexn__loop:
-    addi a0, a0, -1
     beqz a1, _snprint_hexn__ret
+    addi a0, a0, -1
     andi t1, a2, 0xf
     srli a2, a2, 0x4
     add t1, t1, t0

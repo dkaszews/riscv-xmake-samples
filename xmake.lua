@@ -82,6 +82,7 @@ end
 
 
 target_asm('hello')
+target_asm('hexdump')
 
 
 target_phony('gdb', function (target)

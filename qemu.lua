@@ -61,21 +61,28 @@ function test(target, opts)
     local infile = basedir .. '/stdin.txt'
     local outfile = tmpdir .. '/outfile.log'
     local errfile = tmpdir .. '/errfile.log'
-
     local exec_options = {
         try = true,
         timeout = 5000,
-        stdin = infile,
+        stdin = os.isfile(infile) and infile or nil,
         stdout = outfile,
         stderr = errfile
     }
     local result = exec(target:name(), { exec_options = exec_options })
-    local stdout = os.isfile(outfile) and io.readfile(outfile) or ''
-    local stderr = os.isfile(errfile) and io.readfile(errfile) or ''
 
-    function readfile_or(path, default)
-        return os.isfile(path) and io.readfile(path) or default
+    function readfile_or(filename, default)
+        if os.isfile(filename) then
+            return io.readfile(filename)
+        end
+        local ext = path.extension(filename)
+        filename = filename:gsub(ext, '_' .. get_config('arch') .. ext)
+        if os.isfile(filename) then
+            return io.readfile(filename)
+        end
+        return default
     end
+    local stdout = readfile_or(outfile, '')
+    local stderr = readfile_or(errfile, '')
 
     local expected_result = tonumber(readfile_or(basedir .. '/result.txt', '0'))
     local expected_stdout = readfile_or(basedir .. '/stdout.txt', '')
@@ -93,7 +100,7 @@ function test(target, opts)
             return
         end
 
-        print('Mismatched %s, expected:')
+        print('Mismatched %s, expected:', name)
         print_indent(expected)
         print('actual:')
         print_indent(actual)
