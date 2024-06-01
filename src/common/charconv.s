@@ -10,6 +10,7 @@
 # a0: buffer
 # a1: length
 # a2: value
+# ret: buffer
 .type snprint_hexn, @function
 .globl snprint_hexn
 snprint_hexn:
@@ -28,6 +29,29 @@ _snprint_hexn__loop:
     j _snprint_hexn__loop
 
 _snprint_hexn__ret:
+    ret
+
+
+# a0: destination
+# a1: source
+# a2: count
+# ret: destination
+.type memcpy, @function
+.globl memcpy
+memcpy:
+    mv t0, a0
+
+__memcpy__loop:
+    beqz a2, __memcpy__ret
+    lb t1, (a1)
+    sb t1, (a0)
+    addi a0, a0, 1
+    addi a1, a1, 1
+    addi a2, a2, -1
+    j __memcpy__loop
+
+__memcpy__ret:
+    mv a0, t0
     ret
 
 
