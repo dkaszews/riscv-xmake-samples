@@ -5,9 +5,11 @@
 
 .equ HELLO_LEN, 15
 .equ BUFFER_SIZE, 96
-.equ ADDRESS_HEX_LEN, XLEN*2
+.equ ADDRESS_HEX_LEN, XLEN * 2
 .equ TEMPLATE_LEN, 72
 .equ HEXDUMP_LINE_BYTES, 16
+.equ HEXDUMP_BYTES_OFFSET, ADDRESS_HEX_LEN + 2
+.equ HEXDUMP_ASCII_OFFSET, ADDRESS_HEX_LEN + 53
 
 .type _start, @function
 .globl _start
@@ -51,24 +53,22 @@ hexdump_line:
     push s0
     push s1
     push s2
+    push s3
     addi sp, sp, -BUFFER_SIZE
-
     mv s0, a0
     mv s1, a1
 
-__hexdump_line__address:
-    mv a2, a0
+__hexdump_line__clear:
     mv a0, sp
+    li a1, ' '
+    li a2, TEMPLATE_LEN
+    jal memset
+
+__hexdump_line__address:
     li a1, ADDRESS_HEX_LEN
+    mv a2, s0
     jal snprint_hexn
 
-    addi a0, a0, ADDRESS_HEX_LEN
-    la a1, template
-    li a2, TEMPLATE_LEN
-    jal memcpy
-
-__hexdump_line__byte:
-    addi a0, a0, 2
     li s2, 0
     li t0, 16
     ble s2, t0, __hexdump_line__loop
@@ -78,28 +78,58 @@ __hexdump_line__loop:
     beq s2, s1, __hexdump_line__print
     li t0, HEXDUMP_LINE_BYTES
     beq s2, t0, __hexdump_line__print
+
+    slli t0, s2, 1
+    add t0, t0, s2
+    addi t0, t0, HEXDUMP_BYTES_OFFSET
+    add a0, sp, t0
+    li t0, HEXDUMP_LINE_BYTES / 2
+    blt s2, t0, __hexdump_line__loop_no_extra_space
+    addi a0, a0, 1
+
+__hexdump_line__loop_no_extra_space:
+    lb s3, (s0)
     li a1, 2
-    lb a2, (s0)
+    mv a2, s3
     jal snprint_hexn
 
-    addi a0, a0, 3
+    li t0, ' '
+    blt s3, t0, __hexdump_line__dot
+    li t0, '~'
+    bgt s3, t0, __hexdump_line__dot
+    j __hexdump_line__ascii
+
+__hexdump_line__dot:
+    li s3, '.'
+
+__hexdump_line__ascii:
+    addi a0, sp, HEXDUMP_ASCII_OFFSET
+    add a0, a0, s2
+    sb s3, (a0)
+
     addi s0, s0, 1
     addi s2, s2, 1
-    li t0, HEXDUMP_LINE_BYTES / 2
-    bne s2, t0, __hexdump_line__loop
-    addi a0, a0, 1
     j __hexdump_line__loop
 
 __hexdump_line__print:
+    li t0, '\n'
+    sb t0, 2(a0)
+    li t0, '|'
+    sb t0, 1(a0)
+    sb zero, 3(a0)
+    addi a0, sp, HEXDUMP_ASCII_OFFSET
+    sb t0, -1(a0)
+
     mv a0, sp
     jal uart_puts
 
 
 __hexdump_line__ret:
-    sub a0, s0, s2
+    mv a0, s0
     sub a1, s1, s2
 
     addi sp, sp, BUFFER_SIZE
+    pop s3
     pop s2
     pop s1
     pop s0
@@ -109,5 +139,4 @@ __hexdump_line__ret:
 
 .section .data
 hello: .string "Hello hexdump!\n"
-template: .string "                                                    |                |\n"
 
