@@ -7,7 +7,7 @@
 .equ HEXDUMP_ADDRESS_SIZE, XLEN * 2
 .equ HEXDUMP_BYTES, 16
 .equ HEXDUMP_BYTES_OFFSET, HEXDUMP_ADDRESS_SIZE + 2
-.equ HEXDUMP_ASCII_OFFSET, HEXDUMP_ADDRESS_SIZE + 53
+.equ HEXDUMP_ASCII_OFFSET, HEXDUMP_ADDRESS_SIZE + 51
 
 .type _start, @function
 .globl _start
@@ -16,6 +16,7 @@ _start:
     csrr t0, mhartid
     bnez t0, _start
 
+    # TODO: read input from user
     la a0, hello
     jal strlen
 
@@ -52,8 +53,11 @@ __hexdump__line_address:
     mv a2, s0
     jal snprint_hexn
 
+    li t0, ':'
+    sb t0, HEXDUMP_ADDRESS_SIZE(a0)
+
     li s2, 0
-    li t0, 16
+    li t0, HEXDUMP_BYTES
     ble s2, t0, __hexdump__line_loop
     mv s2, t0
 
@@ -66,11 +70,8 @@ __hexdump__line_loop:
     add t0, t0, s2
     addi t0, t0, HEXDUMP_BYTES_OFFSET
     add a0, sp, t0
-    li t0, HEXDUMP_BYTES / 2
-    blt s2, t0, 10f
-    addi a0, a0, 1
 
-10: lb s3, (s0)
+    lb s3, (s0)
     li a1, 2
     mv a2, s3
     jal snprint_hexn
@@ -95,12 +96,8 @@ __hexdump__ascii:
 
 __hexdump__line_print:
     li t0, '\n'
-    sb t0, 2(a0)
-    li t0, '|'
     sb t0, 1(a0)
-    sb zero, 3(a0)
-    addi a0, sp, HEXDUMP_ASCII_OFFSET
-    sb t0, -1(a0)
+    sb zero, 2(a0)
 
     mv a0, sp
     jal uart_puts
