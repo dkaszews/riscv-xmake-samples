@@ -3,13 +3,11 @@
 .include "arch.s"
 .section .text.start
 
-.equ HELLO_LEN, 15
-.equ BUFFER_SIZE, 96
-.equ ADDRESS_HEX_LEN, XLEN * 2
-.equ TEMPLATE_LEN, 72
-.equ HEXDUMP_LINE_BYTES, 16
-.equ HEXDUMP_BYTES_OFFSET, ADDRESS_HEX_LEN + 2
-.equ HEXDUMP_ASCII_OFFSET, ADDRESS_HEX_LEN + 53
+.equ HEXDUMP_BUFFER_SIZE, 96
+.equ HEXDUMP_ADDRESS_SIZE, XLEN * 2
+.equ HEXDUMP_BYTES, 16
+.equ HEXDUMP_BYTES_OFFSET, HEXDUMP_ADDRESS_SIZE + 2
+.equ HEXDUMP_ASCII_OFFSET, HEXDUMP_ADDRESS_SIZE + 53
 
 .type _start, @function
 .globl _start
@@ -34,87 +32,68 @@ _start:
 .type hexdump, @function
 hexdump:
     push ra
-
-__hexdump__loop:
-    beqz a1, __hexdump__ret
-    # TODO: inline
-    jal hexdump_line
-    j __hexdump__loop
-
-__hexdump__ret:
-    pop ra
-    ret
-
-
-# a0: address
-# a1: length, guaranteed non zero
-# ret0: next_address
-# ret1: remaining_length
-.type hexdump, @function
-hexdump_line:
-    push ra
     push s0
     push s1
     push s2
     push s3
-    addi sp, sp, -BUFFER_SIZE
+    addi sp, sp, -HEXDUMP_BUFFER_SIZE
     mv s0, a0
     mv s1, a1
 
-__hexdump_line__clear:
+__hexdump__line_prepare:
+    beqz s1, __hexdump__ret
     mv a0, sp
     li a1, ' '
-    li a2, TEMPLATE_LEN
+    li a2, HEXDUMP_BUFFER_SIZE
     jal memset
 
-__hexdump_line__address:
-    li a1, ADDRESS_HEX_LEN
+__hexdump__line_address:
+    li a1, HEXDUMP_ADDRESS_SIZE
     mv a2, s0
     jal snprint_hexn
 
     li s2, 0
     li t0, 16
-    ble s2, t0, __hexdump_line__loop
+    ble s2, t0, __hexdump__line_loop
     mv s2, t0
 
-__hexdump_line__loop:
-    beq s2, s1, __hexdump_line__print
-    li t0, HEXDUMP_LINE_BYTES
-    beq s2, t0, __hexdump_line__print
+__hexdump__line_loop:
+    beq s2, s1, __hexdump__line_print
+    li t0, HEXDUMP_BYTES
+    beq s2, t0, __hexdump__line_print
 
     slli t0, s2, 1
     add t0, t0, s2
     addi t0, t0, HEXDUMP_BYTES_OFFSET
     add a0, sp, t0
-    li t0, HEXDUMP_LINE_BYTES / 2
-    blt s2, t0, __hexdump_line__loop_no_extra_space
+    li t0, HEXDUMP_BYTES / 2
+    blt s2, t0, 10f
     addi a0, a0, 1
 
-__hexdump_line__loop_no_extra_space:
-    lb s3, (s0)
+10: lb s3, (s0)
     li a1, 2
     mv a2, s3
     jal snprint_hexn
 
     li t0, ' '
-    blt s3, t0, __hexdump_line__dot
+    blt s3, t0, __hexdump__ascii_dot
     li t0, '~'
-    bgt s3, t0, __hexdump_line__dot
-    j __hexdump_line__ascii
+    bgt s3, t0, __hexdump__ascii_dot
+    j __hexdump__ascii
 
-__hexdump_line__dot:
+__hexdump__ascii_dot:
     li s3, '.'
 
-__hexdump_line__ascii:
+__hexdump__ascii:
     addi a0, sp, HEXDUMP_ASCII_OFFSET
     add a0, a0, s2
     sb s3, (a0)
 
     addi s0, s0, 1
     addi s2, s2, 1
-    j __hexdump_line__loop
+    j __hexdump__line_loop
 
-__hexdump_line__print:
+__hexdump__line_print:
     li t0, '\n'
     sb t0, 2(a0)
     li t0, '|'
@@ -126,12 +105,12 @@ __hexdump_line__print:
     mv a0, sp
     jal uart_puts
 
+    sub s1, s1, s2
+    j __hexdump__line_prepare
 
-__hexdump_line__ret:
-    mv a0, s0
-    sub a1, s1, s2
 
-    addi sp, sp, BUFFER_SIZE
+__hexdump__ret:
+    addi sp, sp, HEXDUMP_BUFFER_SIZE
     pop s3
     pop s2
     pop s1
@@ -141,5 +120,5 @@ __hexdump_line__ret:
 
 
 .section .data
-hello: .string "Hello hexdump!\n"
+hello: .string "Hello hexdump from a very long line!\n"
 
