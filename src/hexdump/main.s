@@ -19,7 +19,10 @@ _start:
     bnez t0, _start
 
     la a0, hello
-    la a1, HELLO_LEN
+    jal strlen
+
+    mv a1, a0
+    la a0, hello
     jal hexdump
 
     li a0, 0
