@@ -1,18 +1,22 @@
 # RISC-V bare metal assembly with xmake
-Small "Hello World" echo program, written in bare metal (no BIOS) RISC-V machine mode assembly for use with the QEMU virt device.
+RISC-V example programs, written in bare metal (no BIOS) machine mode assembly for use with the QEMU virt device.
 Provided as a reference for getting started with RISC-V assembly.
 
 ## Features
 * UART input and output, works with UTF-8 (backspace and ANSI escapes passthrough)
 * Supports both 32 and 64bit via helper macros and conditional compilation, no C preprocessor required
-* Clean exit from QEMU with return code indicating success or failure (on checked overflow)
+* Clean exit from QEMU with return code indicating success or failure
 * Instructions for debugging with GDB
+
+## Projects
+* [`hello`](src/hello/main.s) - Hello world program, echoing user input and its size, with buffer overflow check
+* [`hexdump`](src/hexdump/main.s) - Prints buffer with user provided content in format equivalent to `xxd -g1`
 
 ## Usage
 1. Install [`xmake`](https://xrepo.xmake.io/#/getting_started?id=get-started), `gcc-riscv64-unknown-elf` toolchain
-1. `xmake build hello`
-1. `xmake run hello`
-1. To debug, run `xmake run gdb hello` in one terminal and `xmake run attach hello` in another
+1. `xmake build $PROJECT`
+1. `xmake run $PROJECT`
+1. To debug, run `xmake run gdb $PROJECT` in one terminal and `xmake run attach $PROJECT` in another
     * Optionally, install `gdb-multiarch` to get register ABI names instead of canonical ones
 1. Switch between configurations with `xmake config --arch=rv32g` and `--arch=rv64g`
 
